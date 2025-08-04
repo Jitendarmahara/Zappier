@@ -1,0 +1,1 @@
+{"root":["./src/authmiddleware.ts","./src/config.ts","./src/index.ts","./src/db/index.ts","./src/routes/actions.ts","./src/routes/trigers.ts","./src/routes/userroute.ts","./src/routes/zaproute.ts","./src/types/type.ts"],"version":"5.8.3"}
