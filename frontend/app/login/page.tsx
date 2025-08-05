@@ -49,6 +49,7 @@ return(
                                     password
 
                                 })
+                                console.log(res)
                                 localStorage.setItem("token" , res.data.token)
                                 router.push('/dashboard')
 

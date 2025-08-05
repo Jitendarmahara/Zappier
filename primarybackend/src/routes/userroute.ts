@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken"
 import bcrypt from "bcryptjs"
 import { JWT_SECRET } from "../config";
 import { authmiddelware } from "../authmiddleware";
+
 const router = Router();
 const client = new PrismaClient();
 router.post("/signup", async (req , res)=>{

@@ -1,10 +1,15 @@
 "use client"
 import { BACKEND_URL } from "@/app/config/config";
+import { metadata } from "@/app/layout";
 import { Appbar } from "@/components/appbar";
 import { LinkedButton } from "@/components/button/Linkedbutton";
+import { PrimaryButton } from "@/components/button/Primarybutton";
+import { Input } from "@/components/input";
 import { Zapfill } from "@/components/zapfill";
 import axios from "axios";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react"
+import { json } from "stream/consumers";
 function useActionsandTriger(){
     const[avaactions , setavaactions] = useState([]);
     const[avatrigers , setavatrigers] = useState([]);
@@ -24,6 +29,7 @@ function useActionsandTriger(){
     return{avaactions , avatrigers}
 }
 export default function(){
+    const router = useRouter()
     const{avaactions ,avatrigers} = useActionsandTriger();
     const [triger ,settriger] = useState<{
         id:string,
@@ -35,12 +41,35 @@ export default function(){
         avaliableactionid:string,
         avaliableactioname: string,
         image:string
+        metadata:any
     }[]>([]);
     const[selectedmodalindex , setselectedmodalindex] = useState<null | number>(null) // this will keep trak in which modal index we are currently
     console.log(triger)
     return(
         <div>
             <Appbar></Appbar>
+            <div className="flex justify-end pt-4 text-center pr-4"> 
+                <PrimaryButton onClick={ async ()=>{
+                    // here we need to create the zap 
+                   const zap =  await axios.post(`${BACKEND_URL}/api/v1/zap`,{
+                        // avaliableactionid and trigrid
+                        "trigerId": triger?.id,
+                        "trigerMetadata":{},
+                        "actions": actions.map(x =>({
+                            actionId: x.avaliableactionid,
+                            actionMetadata: x.metadata
+                        }))
+                    },{
+                        headers:{
+                            "Authorization": localStorage.getItem("token")
+                        }
+                    })
+                    router.push('/dashboard')
+                    
+                }}>
+                    Publish
+                </PrimaryButton>
+            </div>
             <div className="flex flex-col justify-center min-h-screen">
                 <div className="flex justify-center">
                   <Zapfill onClick={()=>{
@@ -59,7 +88,8 @@ export default function(){
                                 index: x.length +2,
                                 avaliableactioname:"",
                                 avaliableactionid:"",
-                                image:""
+                                image:"",
+                                metadata: {}
                             }])
                         }}>
                             <div className="text-2xl">
@@ -70,7 +100,7 @@ export default function(){
                 </div>
             </div>
            <div>{selectedmodalindex}</div>
-            {selectedmodalindex && <Modal avaliableitem={selectedmodalindex===1 ? avatrigers  : avaactions} onSelect={(prop:null | {name:string , id:string , image:string})=>{
+            {selectedmodalindex && <Modal avaliableitem={selectedmodalindex===1 ? avatrigers  : avaactions} onSelect={(prop:null | {name:string , id:string , image?:string , metadata:any})=>{
                 if(prop===null){
                     setselectedmodalindex(null);
                     return;
@@ -79,7 +109,7 @@ export default function(){
                     settriger({
                         id: prop.id,
                         name : prop.name,
-                        image: prop.image
+                        image: prop.image as""
                     })
                 }else{
                     setactions(x =>{
@@ -88,7 +118,8 @@ export default function(){
                             index : selectedmodalindex,
                             avaliableactioname:prop.name,
                             avaliableactionid:prop.id,
-                            image: prop.image
+                            image: prop.image as"",
+                            metadata: prop.metadata
                         }
                         return newactinon
                     })
@@ -97,15 +128,19 @@ export default function(){
         </div>
     )
 }
-function Modal({index , onSelect , avaliableitem}:{ index:number  , onSelect:(prop:null |{name:string , id:string , image:string})=>void,avaliableitem:{id:string , name:string , image:string;}[]}){
-    
+function Modal({index , onSelect , avaliableitem}:{ index:number  , onSelect:(prop:null |{name:string , id:string , image?:string , metadata:any})=>void,avaliableitem:{id:string , name:string , image:string;}[]}){
+    const[step , setstep] = useState(0);
+    const[selectedvalue , setselectedvalue] = useState<{
+        id:string,
+        name:string
+        
+    }>()
+    const istriger  = index===1
     return (
-      <div onClick={()=>{
-        onSelect(null)
-      }} className=" overflow-y-auto flex overflow-x-hidden bg-slate-100 bg-opacity-70 fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+      <div  className=" overflow-y-auto flex overflow-x-hidden bg-slate-100 bg-opacity-70 fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
     <div  className="relative p-4 w-full max-w-2xl max-h-full  ">
     
-        <div className="relative bg-white rounded-lg shadow-sm dark:bg-white">
+        <div  className="relative bg-white rounded-lg shadow-sm dark:bg-white">
             
             <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600 border-gray-200">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-black">
@@ -120,19 +155,40 @@ function Modal({index , onSelect , avaliableitem}:{ index:number  , onSelect:(pr
                     <span className="sr-only">Close modal</span>
                 </button>
             </div>
-           
             <div className="p-4 md:p-5 space-y-4">
-                {avaliableitem.map(({id , name , image})=>
-                <div onClick={()=>{
+                {step===1 && selectedvalue?.id==="email" && <Emailselector metadata={(metadata)=>{
                     onSelect({
-                        id,
-                        name,
-                        image
+                        ...selectedvalue,
+                        metadata
                     })
+                }}></Emailselector>}
+                {step===1 && selectedvalue?.id==="solana" && <Solanaselector metadata={(metadata)=>{
+                    onSelect({
+                        ...selectedvalue,
+                        metadata
+                    })
+                }}></Solanaselector>}
+               {step===0 && <div> {avaliableitem.map(({id , name , image})=>
+                <div onClick={()=>{
+                    if(istriger){
+                        onSelect({
+                            id,
+                            name,
+                            image,
+                           metadata:{}
+                        })
+                    }else{
+                        setstep(s=>s+1);
+                        console.log("i was callled")
+                        setselectedvalue({
+                            id,
+                            name
+                        })
+                    }
                 }} className="flex border p-4 cursor-pointer  hover:bg-blue-400">
                     <img src={image} width={30} className="bg-black"/> <div>{name}</div>
                 </div>
-                )}
+                )} </div>}
             </div>
           
            
@@ -141,4 +197,40 @@ function Modal({index , onSelect , avaliableitem}:{ index:number  , onSelect:(pr
 </div>
     )
 }
+
+function Emailselector({metadata}:{metadata:(params:any)=>void}){
+
+    const[email , setemail] = useState("");
+    const[body , setbody] = useState("");
+    return(
+        <div>
+            <Input lable="To" onChange={(e)=>{setemail(e.target.value)}} placeholder="Sender_Email" type="text" ></Input> 
+            <Input lable="Boday" onChange={(e)=>{setbody(e.target.value)}} placeholder="Email_Body" type="text"></Input>
+            <PrimaryButton onClick={()=>{
+                metadata({
+                    email,
+                    body
+                })
+            }}>submit</PrimaryButton>
+        </div>
+    )
+}
+function Solanaselector({metadata}:{metadata:(parms:any)=>void}){
+    const[to , setto] = useState("");
+    const[amount , setamount] = useState("");
+    return(
+        <div>
+            <Input lable="To" onChange={(e)=>{setto(e.target.value)}} placeholder="Sender_Email" type="text" ></Input> 
+            <Input lable="Amount" onChange={(e)=>{setamount(e.target.value)}} placeholder="Email_Body" type="text"></Input>
+            <PrimaryButton onClick={()=>{
+                metadata({
+                    to,
+                    amount
+                })
+            }}>submit</PrimaryButton>
+        </div>
+    )
+}
+
+
 

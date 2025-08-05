@@ -13,21 +13,25 @@ router.post("/" , authmiddelware ,  async(req , res)=>{
             msg:"wrong inputs"
         })
     }
+    console.log(body)
+    console.log(id)
     try{
-    await  client.$transaction(async tx=>{
-        const zap = await  tx.zap.create({
+     const zapid = await  client.$transaction(async tx=>{
+        const zap = await tx.zap.create({
             data:{
-                userId: id,
+                userId: parseInt(id),
                 trigerId : "",
                 actions:{
                     create: parsedata.data.actions.map((x , index) => ({
                         actionid: x.actionId,
-                        sortingorder: index
+                        sortingorder: index,
+                        metadata: x.actionMetadata
                     }))
                 }
 
             }
         })
+        console.log("i was done ")
         const triger  = await  tx.triger.create({
             data:{
                 zapId : zap .id,
@@ -41,9 +45,13 @@ router.post("/" , authmiddelware ,  async(req , res)=>{
             data:{
                 trigerId :  triger.id
             }
+        
+            
         })
+        return zap.id
     })
 }catch(e){
+    console.log(e)
     return res.status(505).json({
         msg:"internal sever error"
     })

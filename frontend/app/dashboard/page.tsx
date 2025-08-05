@@ -3,7 +3,7 @@ import { Appbar } from "@/components/appbar";
 import { Darkbutton } from "@/components/button/Darkbutton";
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { BACKEND_URL } from "../config/config";
+import { BACKEND_URL, HOOKS_URL } from "../config/config";
 import { LinkedButton } from "@/components/button/Linkedbutton";
 import { useRouter } from "next/navigation";
 export default function (){
@@ -78,14 +78,16 @@ function Zaptbale({zap}:{zap:zap[]}){
         <div className="pt-8 max-w-screen-lg w-full  mx-auto px-4">
             <div className="flex">
                 <div className="flex-1">Name</div>
-                <div className="flex-1">LastEdit</div>
-                <div className="flex-1">Running</div>
+                <div className="flex-1">Id</div>
+                <div className="flex-1">Created</div>
+                <div className="flex-1">Webhook Url</div>
                 <div className="flex-1">Go</div>
             </div>
             {zap.map(x => <div className="flex border-b border-t p-4"> 
                 <div className="flex-1">{x.triger.type.name} {x.actions.map(x=>x.type.name)+" "} </div>
                 <div className="flex-1">{x.id}</div>
                 <div className="flex-1">03-08-2025</div>
+                <div className="flex-1">{`${HOOKS_URL}/hooks/catch/${x.userId}/${x.id}`}</div>
                 <div className="flex-1"><LinkedButton onClick={()=>{
                     router.push('/zap/'+x.id)
                 }}>Go</LinkedButton></div>
@@ -93,3 +95,4 @@ function Zaptbale({zap}:{zap:zap[]}){
         </div>
     )
 }
+///hooks/catch/:userId/:zapId
